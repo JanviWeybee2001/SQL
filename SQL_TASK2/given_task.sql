@@ -41,7 +41,6 @@ INSERT INTO module_master VALUES
 ('module_4', 'inactive'),
 ('module_5', 'inactive');
 
-SELECT * FROM module_master;
 
 
 INSERT INTO customer VALUES
@@ -51,7 +50,6 @@ INSERT INTO customer VALUES
 ('krishi','patel','active'),
 ('hemangi','niraml','inactive');
 
-SELECT * FROM customer;
 
 INSERT INTO vendor VALUES
 ('fenny','limbadiya','active'),
@@ -60,7 +58,6 @@ INSERT INTO vendor VALUES
 ('jhonty','dodecha','inactive'),
 ('nirmal','patel','active');
 
-SELECT * FROM vendor;
 
 INSERT INTO courier VALUES
 ('courier','-001','active'),
@@ -69,7 +66,6 @@ INSERT INTO courier VALUES
 ('courier','-004','inactive'),
 ('courier','-005','active');
 
-SELECT * FROM courier;
 
 --drop table courier
 
@@ -81,16 +77,41 @@ INSERT INTO sales_order VALUES
 (3,1,'inactive'),
 (3,5,'active');
 
+
+-- Given one row by set the @num's value
+declare @query VARCHAR(500)
+declare @num int = 2
+select @query = 'select id, CONCAT(first_name,'' '', last_name) as NAME from ' + (SELECT M.module_name FROM sales_order AS S INNER JOIN module_master AS M ON S.module_id = M.id WHERE S.id= @num) 
++ CONCAT(' WHERE id =' , (SELECT party_id FROM sales_order where id = @num));
+exec (@query)
+
+-- Show DATA
+SELECT * FROM customer;
+SELECT * FROM courier;
+SELECT * FROM vendor;
+SELECT * FROM module_master;
 SELECT * FROM sales_order;
 
-SELECT sys.columns.name AS ColumnName
-FROM sys.columns
-JOIN sys.tables ON sys.columns.object_id = tables.object_id
-WHERE
-  tables.name = (SELECT M.module_name FROM sales_order AS S INNER JOIN module_master AS M ON S.module_id = M.module_id WHERE S.sales_order_id=1)
+-- Show the whole data table with name
+SELECT S.id, M.module_name,S.party_id ,
+CASE
+ WHEN M.module_name = 'customer' THEN (SELECT first_name + ' ' + last_name FROM customer WHERE id = S.party_id)
+ WHEN M.module_name = 'courier' THEN (SELECT first_name + ' ' + last_name FROM courier WHERE id = S.party_id)
+ WHEN M.module_name = 'vendor' THEN (SELECT first_name + ' ' + last_name FROM vendor WHERE id = S.party_id)
+END as full_name
+FROM sales_order AS S INNER JOIN module_master AS M ON S.module_id = M.id;
 
 
+-- Stored procedure
+GO
+CREATE PROCEDURE FULL_NAME @num int
+as
 declare @query VARCHAR(500)
-declare @num int = 1
-select @query = 'select id, CONCAT(first_name,'' '', last_name) as NAME from ' + (SELECT M.module_name FROM sales_order AS S INNER JOIN module_master AS M ON S.module_id = M.id WHERE S.id= @num) + CONCAT(' WHERE id =' , (SELECT party_id FROM sales_order where id = @num));
-exec (@query)
+select @query = 'select id , CONCAT(first_name,'' '', last_name) as NAME from ' + (SELECT M.module_name FROM sales_order AS S INNER JOIN module_master AS M ON S.module_id = M.id WHERE S.id= @num) 
++ CONCAT(' WHERE id =' , (SELECT party_id FROM sales_order where id = @num));
+exec (@query);
+
+EXECUTE FULL_NAME @num = 4;  
+GO 
+
+--DROP PROCEDURE FULL_NAME
